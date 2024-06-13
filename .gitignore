@@ -3,3 +3,4 @@ myenv/
 .ipynb_checkpoints/
 .cache
 main_test.ipynb
+.env
