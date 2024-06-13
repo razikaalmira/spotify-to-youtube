@@ -1,0 +1,5 @@
+myenv/
+*.json
+.ipynb_checkpoints/
+.cache
+main_test.ipynb
