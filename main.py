@@ -1,4 +1,3 @@
-import os
 import time
 from dotenv import load_dotenv
 import spotipy
@@ -58,24 +57,66 @@ class SpotifyToYoutube:
         Args:
             oauth_json: name of a json file that contain Youtube API credentials
         """
-        yt_playlists = self.yt.get_library_playlists()
-        yt_playlist_names = set([yt_playlists[i]['title'] for i in range(len(yt_playlists))])
+        yt_lib_playlists = self.yt.get_library_playlists()
+        yt_playlist_names = [item['title'] for item in yt_lib_playlists]
+        yt_playlist_ids = [item['playlistId'] for item in yt_lib_playlists]
 
-        playlists = self.get_spo_playlists()
+        yt_playlists = list(zip(yt_playlist_names,yt_playlist_ids))
+        spo_playlists = self.get_spo_playlists()
 
-        for playlistid,name,owner in playlists:
+        for playlistid,name,owner in spo_playlists:
+            yt_playlist_id = None
+            for yt_name, yt_id in yt_playlists:
+                if yt_name == name:
+                    yt_playlist_id = yt_id
+
+
             if name not in yt_playlist_names:
                 playlist_yt = self.yt.create_playlist(title=name,description=name+' created by '+owner+' from Spotify')
                 songlist = self.get_spo_songs(playlistid)
+                songs = []
                 for song in songlist:
                     search_results = self.yt.search(song)
                     if search_results:
-                        self.yt.add_playlist_items(playlist_yt,[search_results[0]['videoId']])
-                        print(f'Succesfully added {song} to {name} playlist')
-                        time.sleep(5)
+                        for item in search_results:
+                            if (item['resultType'] == 'song' or item['resultType'] == 'video'):
+                                songs.append(item['videoId'])
+                                print(f'Succesfully added {song} to {name} playlist')
+                                time.sleep(2)
+                                break
+                    else:
+                        songs.append('NJMW2app0VI') # add blank video if nothing come up on the search result
+                self.yt.add_playlist_items(playlist_yt,songs)
+                print(f'Succesfully added {name} playlist to Youtube')
                 time.sleep(30)
+
             else:
-                print(f'Playlist {name} is already available in your Youtube account')
+                yt_playlist_detail = self.yt.get_playlist(yt_playlist_id)
+                if len(self.get_spo_songs(playlistid)) > yt_playlist_detail['trackCount']:
+                    songlist = self.get_spo_songs(playlistid)
+                    songs = []
+                    for song in songlist:
+                        search_results = self.yt.search(song)
+                        if search_results:
+                            for item in search_results:
+                                if (item['resultType'] == 'song' or item['resultType'] == 'video'):
+                                    if item['videoId'] not in set([track['videoId'] for track in yt_playlist_detail['tracks']]):
+                                        songs.append(item['videoId'])
+                                        x = item['title']
+                                        print(f'V Succesfully added {x} // {song} to {name} playlist')
+                                        time.sleep(2)
+                                        break
+                                    else:
+                                        print(f'X {song} is already available in {name} playlist')
+                                        break
+                        else:
+                            songs.append('NJMW2app0VI')
+                    self.yt.add_playlist_items(yt_playlist_id,songs)
+                    print(f'Succesfully added {name} playlist to Youtube')
+                    time.sleep(30)
+
+                else:
+                    print(f'Playlist {name} is already available in your Youtube account')
 
 if __name__ == "__main__":
     spotify_to_youtube = SpotifyToYoutube('oauth.json')
