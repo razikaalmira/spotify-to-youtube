@@ -71,8 +71,9 @@ class SpotifyToYoutube:
                     yt_playlist_id = yt_id
 
 
-            if name not in yt_playlist_names:
+            if name not in set(yt_playlist_names):
                 playlist_yt = self.yt.create_playlist(title=name,description=name+' created by '+owner+' from Spotify')
+                print(f'Playlist {name} has been created')
                 songlist = self.get_spo_songs(playlistid)
                 songs = []
                 for song in songlist:
